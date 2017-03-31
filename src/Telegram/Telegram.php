@@ -5,6 +5,8 @@ namespace Telegram;
 
 use Telegram\Exception\APIException;
 use Telegram\Exception\UpdateException;
+use Telegram\Objects\Chat;
+use Telegram\Objects\Message;
 use Telegram\Objects\User;
 
 /**
@@ -117,4 +119,28 @@ class Telegram
         return User::Parse($me);
     }
 
+    /**
+     * @param int $chatId
+     * @param string $message
+     * @param bool $html
+     * @return Message
+     * @throws APIException
+     */
+    public function sendMessage(int $chatId, string $message, bool $html = false) : Message
+    {
+        $payload    =   [
+            "chat_id"   =>  $chatId,
+            "text"  =>  $message
+        ];
+        if($html    === true) {
+            $payload["parse_mode"]  =   "HTML";
+        }
+
+        $send   =   $this->sendAPI("sendMessage", $payload);
+        if(!is_array($send)) {
+            throw APIException::BadResultType("sendMessage", gettype($send), "Array");
+        }
+
+        return Message::Parse($send);
+    }
 }
