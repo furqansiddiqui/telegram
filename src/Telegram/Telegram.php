@@ -4,8 +4,6 @@ declare(strict_types=1);
 namespace Telegram;
 
 use Telegram\Exception\APIException;
-use Telegram\Exception\UpdateException;
-use Telegram\Objects\Chat;
 use Telegram\Objects\Message;
 use Telegram\Objects\User;
 
