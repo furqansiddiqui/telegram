@@ -3,7 +3,8 @@
   "description": "Telegram package",
   "minimum-stability": "beta",
   "require": {
-    "php": ">=7.0.0"
+    "php": ">=7.0.0",
+    "furqansiddiqui/http-client": ">=0.2.1"
   },
   "autoload": {
     "psr-4": {
