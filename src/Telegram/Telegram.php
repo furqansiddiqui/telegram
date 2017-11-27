@@ -15,7 +15,11 @@ declare(strict_types=1);
 namespace Telegram;
 
 use Telegram\Exception\APIException;
+use Telegram\Exception\HandlerException;
+use Telegram\Handler\AbstractHandler;
+use Telegram\Handler\BasicHandler;
 use Telegram\Objects\Message;
+use Telegram\Objects\Update;
 use Telegram\Objects\User;
 
 /**
@@ -24,13 +28,16 @@ use Telegram\Objects\User;
  */
 class Telegram
 {
+    const VERSION   =   "1.0.0";
+
     /** @var string */
     private $apiKey;
     /** @var bool */
     private $apiCheckSSL;
-
     /** @var WebHooks */
     private $webHooks;
+    /** @var AbstractHandler */
+    private $handler;
 
     /**
      * Telegram constructor.
@@ -42,6 +49,58 @@ class Telegram
         $this->apiCheckSSL  =   true;
 
         $this->webHooks =   new WebHooks($this);
+        $this->setHandler(new BasicHandler($this));
+    }
+
+    /**
+     * @param AbstractHandler $handler
+     * @return Telegram
+     */
+    public function setHandler(AbstractHandler $handler) : self
+    {
+        $this->handler  =   $handler;
+        return $this;
+    }
+
+    /**
+     * @param array $data
+     * @throws HandlerException
+     */
+    public function handle(array $data)
+    {
+        $update =   Update::Parse($data);
+        if(!$update->message instanceof Message) {
+            throw new HandlerException(sprintf('Handling of update type "%s" not supported', $update->type ?? "NULL"));
+        }
+
+        try {
+            $this->handler->setMessage($update->message);
+
+            $command    =   preg_replace('/[^a-zA-Z0-9\_]/', "", strtolower($update->message->text));
+            $command    =   preg_split("/\_/", $command, 0, PREG_SPLIT_NO_EMPTY);
+            $command    =   implode("", array_map(function ($piece) {
+                return ucfirst($piece);
+            }, $command));
+            $command    =   lcfirst($command);
+
+            if(!method_exists($this->handler, $command)) {
+                throw new HandlerException(sprintf('Sorry! I cannot handle "%s" command. Use /help for list of commands', $command));
+            }
+        } catch (HandlerException $e) {
+            $this->handler->sendReply($e->getMessage());
+            throw $e;
+        }
+
+        call_user_func([$this->handler,$command]);
+    }
+
+    /**
+     * Alias method for "handle"
+     * @param array $data
+     */
+    public function listen(array $data)
+    {
+        $this->handle($data);
     }
 
     /**
