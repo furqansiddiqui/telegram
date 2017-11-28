@@ -28,7 +28,7 @@ use Telegram\Objects\User;
  */
 class Telegram
 {
-    const VERSION   =   "1.1.2";
+    const VERSION   =   "0.3.2";
 
     /** @var string */
     private $apiKey;
