@@ -28,7 +28,7 @@ use Telegram\Objects\User;
  */
 class Telegram
 {
-    const VERSION   =   "1.0.0";
+    const VERSION   =   "1.1.2";
 
     /** @var string */
     private $apiKey;
@@ -74,24 +74,13 @@ class Telegram
         }
 
         try {
-            $this->handler->setMessage($update->message);
-
-            $command    =   preg_replace('/[^a-zA-Z0-9\_]/', "", strtolower($update->message->text));
-            $command    =   preg_split("/\_/", $command, 0, PREG_SPLIT_NO_EMPTY);
-            $command    =   implode("", array_map(function ($piece) {
-                return ucfirst($piece);
-            }, $command));
-            $command    =   lcfirst($command);
-
-            if(!method_exists($this->handler, $command)) {
-                throw new HandlerException(sprintf('Sorry! I cannot handle "%s" command. Use /help for list of commands', $command));
-            }
+            $this->handler->_crunchMessage($update->message);
         } catch (HandlerException $e) {
             $this->handler->sendReply($e->getMessage());
             throw $e;
         }
 
-        call_user_func([$this->handler,$command]);
+        $this->handler->_execute();
     }
 
     /**

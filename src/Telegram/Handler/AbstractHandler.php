@@ -13,6 +13,7 @@
 declare(strict_types=1);
 
 namespace Telegram\Handler;
+
 use Telegram\Exception\HandlerException;
 use Telegram\Objects\Message;
 use Telegram\Telegram;
@@ -30,6 +31,10 @@ abstract class AbstractHandler
     protected $sendAsHTML;
     /** @var Message */
     protected $message;
+    /** @var null|string */
+    protected $command;
+    /** @var array */
+    protected $params;
 
     /**
      * AbstractHandler constructor.
@@ -39,6 +44,64 @@ abstract class AbstractHandler
     {
         $this->telegram =   $telegram;
         $this->sendAsHTML   =   false;
+        $this->params   =   [];
+    }
+
+    /**
+     * @param Message $message
+     * @return AbstractHandler
+     * @throws HandlerException
+     */
+    final public function _crunchMessage(Message $message) : self
+    {
+        if(!$message->text) {
+            throw new HandlerException("Sorry! I don't understand non-text messages");
+        }
+
+        if($message->chat->type !== "private") {
+            throw new HandlerException("Sorry! You can only communicate with me in a private channel");
+        }
+
+        $this->message  =   $message;
+
+        // Split in pieces
+        $pieces =   preg_split('/\s/', preg_replace('/\s+/', ' ', $this->message->text));
+        $command    =   strtolower(strval($pieces[0] ?? ""));
+        if(preg_match('/^\/[a-zA-Z0-9\_]+$/', $command)) {
+            // Command
+            $command    =   preg_split("/\_/", substr($command, 1), 0, PREG_SPLIT_NO_EMPTY);
+            $command    =   implode("", array_map(function ($piece) {
+                return ucfirst($piece);
+            }, $command));
+            $command    =   lcfirst($command);
+            $this->command  =   $command; // Exists
+
+            // Params
+            unset($pieces[0]);
+            foreach($pieces as $param) {
+                $this->params[] =   preg_replace('/[^a-zA-Z0-9\_]/', '', $param);
+            }
+        } else {
+            $this->command  =   "chat";
+        }
+
+        // Check if command method found
+        if(!method_exists($this, $this->command)) {
+            throw new HandlerException(
+                sprintf('Sorry! I cannot handle "%s" command. Use /help for list of commands', $this->command)
+            );
+        }
+
+        return $this;
+    }
+
+    /**
+     * Execute requested command
+     */
+    final public function _execute()
+    {
+
+        call_user_func([$this, $this->command]);
     }
 
     /**
@@ -56,30 +119,26 @@ abstract class AbstractHandler
     }
 
     /**
-     * @param Message $message
-     * @return AbstractHandler
-     * @throws HandlerException
-     */
-    final public function setMessage(Message $message) : self
-    {
-        if(!$message->text) {
-            throw new HandlerException("Sorry! I don't understand non-text messages");
-        }
-
-        if($message->chat->type !== "private") {
-            throw new HandlerException("Sorry! You can only communicate with me in a private channel");
-        }
-
-        $this->message  =   $message;
-        return $this;
-    }
-
-    /**
      * @return Message
      */
     final public function message() : Message
     {
         return $this->message;
+    }
+
+
+    /**
+     * Default chat function
+     */
+    public function chat()
+    {
+        try {
+            throw new HandlerException(
+                'Sorry! I have not yet been polished to talk like a robot. You may use Use /help for list of commands'
+            );
+        } catch (HandlerException $e) {
+            $this->sendReply($e->getMessage());
+        }
     }
 
     /**

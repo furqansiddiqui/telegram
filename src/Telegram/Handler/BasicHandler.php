@@ -54,4 +54,21 @@ class BasicHandler extends AbstractHandler
             Telegram::VERSION
         ));
     }
+
+    public function chat()
+    {
+        try {
+            $message    =   strtolower($this->message->text);
+
+            if(preg_match('/^(hi|hello|hey)$/i', $message)) {
+                throw new HandlerException('Hello there! Good day to you too!');
+            }
+
+            throw new HandlerException(
+                'Sorry! I have not yet been polished to talk like a robot. You may use Use /help for list of commands'
+            );
+        } catch (HandlerException $e) {
+            $this->sendReply($e->getMessage());
+        }
+    }
 }

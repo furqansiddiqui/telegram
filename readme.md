@@ -33,12 +33,17 @@ $telegram->webHooks()->setWebHook("https://www.domain.tld/telegram");
 
 Create a handler class that extends `AbstractHandler` with each method for every command you wish to respond to.
 
+* Any user sent message that doesn't start with leading slash "/" is considered a chat message and will be handled in "chat" method.
+* All user messages starting with leading slash "/" are commands, and have individual methods as per their names.
 * Your custom handler class must have "start" and "help" methods.
 * Ideally, You should associate "chat_id" param with users in your DB.
 * On start command, you should generate a temp. authentication code and send it to telegram chat asking them to enter this code at your website after proper authentication as a user. 
 * Once user enters this code at your website, you can safely associate "chat_id" param associated with this temp. code with your user.
 * How you generate/store and secure this code is entirely up to you.
-* You should name your methods in "camelCase", i.e. when user enters command "/get_balance", handler will look for and call "getBalance" method if available
+* You should name your methods in "camelCase", i.e. when user enters command "/get_balance", handler will look for and call "getBalance" method if available.
+* Any word followed by a command (after a leading slash "/") will be considered as param.
+* All parameters are stored in "params" prop as indexed array.
+* All non-command messages can be handled with in "chat" method. See `BasicHandler` class for an example.
 
 #### Listening
 
